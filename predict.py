@@ -1,0 +1,66 @@
+import torch
+from torchvision import datasets, transforms, models
+from PIL import Image
+import torch.nn as nn
+
+# Device
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Using device:", device)
+if torch.cuda.is_available():
+    print("GPU:", torch.cuda.get_device_name(0))
+
+# Load Model
+
+model = models.resnet18(weights=None)
+model.fc = torch.nn.Linear(model.fc.in_features, 2)
+model.load_state_dict(torch.load("model/ai_detector.pth", map_location=device))
+
+model = model.to(device)
+model.eval()
+
+print("Model loaded successfully.")
+
+# Image Transformation
+
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+     transforms.RandomHorizontalFlip(),
+     transforms.RandomRotation(10),
+     transforms.ToTensor(),
+     transforms.Normalize(
+        mean=[0.485,0.456,0.406],
+        std=[0.229,0.224,0.225]
+)])
+
+# Image Path
+
+image_path = input("Enter Image Path: ")
+
+# Load Image
+
+image = Image.open(image_path).convert("RGB")
+image = transform(image)
+image = image.unsqueeze(0)
+image = image.to(device)
+
+# Prediction
+
+with torch.no_grad():
+    output = model(image)
+    probabilities = torch.softmax(output, dim=1)
+    confidence, predicted = torch.max(probabilities, 1)
+
+# Result
+
+classes = ["FAKE","REAL"]
+prediction = classes[predicted.item()]
+confidence = confidence.item()*100
+
+print()
+print("====================================================")
+print("                 AI IMAGE DETECTION                 ")
+print("====================================================")
+print("Prediction:",prediction)
+print(f"Confidence: {confidence:.2f}%")
+print("====================================================")
