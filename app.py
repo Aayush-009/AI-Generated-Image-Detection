@@ -23,7 +23,7 @@ if torch.cuda.is_available():
 # ==========================================
 
 model_path = hf_hub_download(
-    repo_id="Aayush--009/ai-image-detector-model",
+    repo_id="Aayush-009/ai-image-detector-model",
     filename="ai_detector.pth"
 )
 
