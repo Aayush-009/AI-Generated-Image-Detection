@@ -1,4 +1,3 @@
-```javascript
 const imageInput = document.getElementById("imageInput");
 const dropZone = document.getElementById("dropZone");
 
@@ -92,9 +91,7 @@ function handleFile(file) {
 
     if (!allowedTypes.includes(file.type)) {
 
-        alert(
-            "Please select a JPG, JPEG, or PNG image."
-        );
+        alert("Please select a JPG, JPEG, or PNG image.");
 
         return;
     }
@@ -104,9 +101,7 @@ function handleFile(file) {
 
     if (file.size > 10 * 1024 * 1024) {
 
-        alert(
-            "Image must be smaller than 10 MB."
-        );
+        alert("Image must be smaller than 10 MB.");
 
         return;
     }
@@ -115,7 +110,7 @@ function handleFile(file) {
     selectedFile = file;
 
 
-    // Create preview
+    // Image preview
 
     preview.src = URL.createObjectURL(file);
 
@@ -152,9 +147,7 @@ detectBtn.addEventListener(
 
         if (!selectedFile) {
 
-            alert(
-                "Please choose an image first."
-            );
+            alert("Please choose an image first.");
 
             return;
         }
@@ -162,10 +155,7 @@ detectBtn.addEventListener(
 
         const formData = new FormData();
 
-        formData.append(
-            "image",
-            selectedFile
-        );
+        formData.append("image", selectedFile);
 
 
         // Show loading
@@ -190,7 +180,7 @@ detectBtn.addEventListener(
             );
 
 
-            // Read response as text first
+            // Get server response as text
 
             const text = await response.text();
 
@@ -198,7 +188,7 @@ detectBtn.addEventListener(
             let data;
 
 
-            // Convert response to JSON safely
+            // Safely convert response to JSON
 
             try {
 
@@ -215,7 +205,7 @@ detectBtn.addEventListener(
             }
 
 
-            // Check server response
+            // Check server status
 
             if (!response.ok) {
 
@@ -234,15 +224,15 @@ detectBtn.addEventListener(
             detectBtn.disabled = false;
 
 
-            // Show prediction
+            // Show result
 
             showResult(
                 data.prediction,
                 data.confidence
             );
 
-
         }
+
 
         catch (error) {
 
@@ -254,8 +244,7 @@ detectBtn.addEventListener(
 
 
             alert(
-                "Error: " +
-                error.message
+                "Error: " + error.message
             );
 
 
@@ -391,4 +380,3 @@ anotherBtn.addEventListener(
     "click",
     resetDetector
 );
-```
