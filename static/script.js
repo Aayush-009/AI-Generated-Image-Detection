@@ -1,52 +1,27 @@
+```javascript
 const imageInput = document.getElementById("imageInput");
-
 const dropZone = document.getElementById("dropZone");
 
-const previewContainer =
-    document.getElementById("previewContainer");
+const previewContainer = document.getElementById("previewContainer");
+const preview = document.getElementById("preview");
+const fileInfo = document.getElementById("fileInfo");
 
-const preview =
-    document.getElementById("preview");
+const detectBtn = document.getElementById("detectBtn");
+const resetBtn = document.getElementById("resetBtn");
+const anotherBtn = document.getElementById("anotherBtn");
 
-const fileInfo =
-    document.getElementById("fileInfo");
+const emptyResult = document.getElementById("emptyResult");
+const loading = document.getElementById("loading");
+const result = document.getElementById("result");
 
-const detectBtn =
-    document.getElementById("detectBtn");
+const resultBadge = document.getElementById("resultBadge");
+const predictionText = document.getElementById("predictionText");
+const resultDescription = document.getElementById("resultDescription");
 
-const resetBtn =
-    document.getElementById("resetBtn");
-
-const anotherBtn =
-    document.getElementById("anotherBtn");
-
-const emptyResult =
-    document.getElementById("emptyResult");
-
-const loading =
-    document.getElementById("loading");
-
-const result =
-    document.getElementById("result");
-
-const resultBadge =
-    document.getElementById("resultBadge");
-
-const predictionText =
-    document.getElementById("predictionText");
-
-const resultDescription =
-    document.getElementById("resultDescription");
-
-const confidenceText =
-    document.getElementById("confidenceText");
-
-const confidenceBar =
-    document.getElementById("confidenceBar");
-
+const confidenceText = document.getElementById("confidenceText");
+const confidenceBar = document.getElementById("confidenceBar");
 
 let selectedFile = null;
-
 
 
 // ========================================
@@ -56,13 +31,10 @@ let selectedFile = null;
 imageInput.addEventListener("change", function () {
 
     if (this.files.length > 0) {
-
         handleFile(this.files[0]);
-
     }
 
 });
-
 
 
 // ========================================
@@ -78,7 +50,6 @@ dropZone.addEventListener("dragover", function (event) {
 });
 
 
-
 // ========================================
 // DRAG LEAVE
 // ========================================
@@ -88,7 +59,6 @@ dropZone.addEventListener("dragleave", function () {
     dropZone.classList.remove("dragover");
 
 });
-
 
 
 // ========================================
@@ -101,15 +71,11 @@ dropZone.addEventListener("drop", function (event) {
 
     dropZone.classList.remove("dragover");
 
-
     if (event.dataTransfer.files.length > 0) {
-
         handleFile(event.dataTransfer.files[0]);
-
     }
 
 });
-
 
 
 // ========================================
@@ -119,15 +85,10 @@ dropZone.addEventListener("drop", function (event) {
 function handleFile(file) {
 
     const allowedTypes = [
-
         "image/jpeg",
-
         "image/jpg",
-
         "image/png"
-
     ];
-
 
     if (!allowedTypes.includes(file.type)) {
 
@@ -136,7 +97,6 @@ function handleFile(file) {
         );
 
         return;
-
     }
 
 
@@ -149,7 +109,6 @@ function handleFile(file) {
         );
 
         return;
-
     }
 
 
@@ -158,20 +117,15 @@ function handleFile(file) {
 
     // Create preview
 
-    preview.src =
-        URL.createObjectURL(file);
+    preview.src = URL.createObjectURL(file);
 
-
-    previewContainer.style.display =
-        "block";
+    previewContainer.style.display = "block";
 
 
     // File information
 
     const sizeMB =
-        (file.size / (1024 * 1024))
-        .toFixed(2);
-
+        (file.size / (1024 * 1024)).toFixed(2);
 
     fileInfo.textContent =
         file.name + " • " + sizeMB + " MB";
@@ -179,19 +133,13 @@ function handleFile(file) {
 
     // Show ready state
 
-    emptyResult.style.display =
-        "flex";
+    emptyResult.style.display = "flex";
 
+    loading.style.display = "none";
 
-    loading.style.display =
-        "none";
-
-
-    result.style.display =
-        "none";
+    result.style.display = "none";
 
 }
-
 
 
 // ========================================
@@ -209,13 +157,10 @@ detectBtn.addEventListener(
             );
 
             return;
-
         }
 
 
-        const formData =
-            new FormData();
-
+        const formData = new FormData();
 
         formData.append(
             "image",
@@ -225,37 +170,52 @@ detectBtn.addEventListener(
 
         // Show loading
 
-        emptyResult.style.display =
-            "none";
+        emptyResult.style.display = "none";
 
+        result.style.display = "none";
 
-        result.style.display =
-            "none";
+        loading.style.display = "flex";
 
-
-        loading.style.display =
-            "flex";
-
-
-        detectBtn.disabled =
-            true;
+        detectBtn.disabled = true;
 
 
         try {
 
-            const response =
-                await fetch(
-                    "/predict",
-                    {
-                        method: "POST",
-                        body: formData
-                    }
+            const response = await fetch(
+                "/predict",
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+
+            // Read response as text first
+
+            const text = await response.text();
+
+
+            let data;
+
+
+            // Convert response to JSON safely
+
+            try {
+
+                data = JSON.parse(text);
+
+            }
+
+            catch {
+
+                throw new Error(
+                    "Server did not return a valid response. Please try again."
                 );
 
+            }
 
-            const data =
-                await response.json();
 
+            // Check server response
 
             if (!response.ok) {
 
@@ -267,13 +227,14 @@ detectBtn.addEventListener(
             }
 
 
-            loading.style.display =
-                "none";
+            // Hide loading
+
+            loading.style.display = "none";
+
+            detectBtn.disabled = false;
 
 
-            detectBtn.disabled =
-                false;
-
+            // Show prediction
 
             showResult(
                 data.prediction,
@@ -285,16 +246,11 @@ detectBtn.addEventListener(
 
         catch (error) {
 
-            loading.style.display =
-                "none";
+            loading.style.display = "none";
 
+            detectBtn.disabled = false;
 
-            detectBtn.disabled =
-                false;
-
-
-            emptyResult.style.display =
-                "flex";
+            emptyResult.style.display = "flex";
 
 
             alert(
@@ -311,7 +267,6 @@ detectBtn.addEventListener(
 );
 
 
-
 // ========================================
 // SHOW RESULT
 // ========================================
@@ -321,8 +276,7 @@ function showResult(
     confidence
 ) {
 
-    result.style.display =
-        "block";
+    result.style.display = "block";
 
 
     confidenceText.textContent =
@@ -370,7 +324,6 @@ function showResult(
 }
 
 
-
 // ========================================
 // RESET
 // ========================================
@@ -380,12 +333,10 @@ function resetDetector() {
     selectedFile = null;
 
 
-    imageInput.value =
-        "";
+    imageInput.value = "";
 
 
-    preview.src =
-        "";
+    preview.src = "";
 
 
     previewContainer.style.display =
@@ -422,8 +373,9 @@ function resetDetector() {
 }
 
 
-
-// Reset button
+// ========================================
+// RESET BUTTON
+// ========================================
 
 resetBtn.addEventListener(
     "click",
@@ -431,10 +383,12 @@ resetBtn.addEventListener(
 );
 
 
-
-// Analyze another image
+// ========================================
+// ANALYZE ANOTHER IMAGE
+// ========================================
 
 anotherBtn.addEventListener(
     "click",
     resetDetector
 );
+```
