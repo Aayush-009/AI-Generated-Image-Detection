@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 from PIL import Image
+from pillow_heif import register_heif_opener
 import onnxruntime as ort
 import numpy as np
 from huggingface_hub import hf_hub_download
@@ -8,6 +9,9 @@ import os
 
 app = Flask(__name__)
 CORS(app)
+
+# Enable HEIC / HEIF image support
+register_heif_opener()
 
 
 # ========================================
@@ -103,7 +107,7 @@ def predict():
 
     try:
 
-        # Open image
+        # Open JPG, JPEG, PNG, HEIC, HEIF image
         image = Image.open(file).convert("RGB")
 
         # Preprocess
