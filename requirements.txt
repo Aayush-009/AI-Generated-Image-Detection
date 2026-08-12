@@ -2,8 +2,7 @@ Flask
 flask-cors
 Pillow
 numpy
+scikit-learn
 huggingface_hub
+onnxruntime
 gunicorn
---extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.9.1+cpu
-torchvision==0.24.1+cpu
