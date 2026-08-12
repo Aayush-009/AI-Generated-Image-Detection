@@ -1,33 +1,37 @@
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 from PIL import Image
-import torch
-from torchvision import models, transforms
-import torch.nn as nn
-from huggingface_hub import hf_hub_downloadfrom flask import Flask, render_template, request, jsonify
-from flask_cors import CORS
-from PIL import Image
 import onnxruntime as ort
 import numpy as np
 from huggingface_hub import hf_hub_download
+import os
 
 app = Flask(__name__)
 CORS(app)
 
-# Download ONNX model files from Hugging Face
-onnx_model = hf_hub_download(
+
+# ========================================
+# DOWNLOAD ONNX MODEL FROM HUGGING FACE
+# ========================================
+
+model_path = hf_hub_download(
     repo_id="Aayush-009/ai-image-detector-model",
     filename="ai_detector.onnx"
 )
 
-onnx_data = hf_hub_download(
+# Download external ONNX data file
+hf_hub_download(
     repo_id="Aayush-009/ai-image-detector-model",
     filename="ai_detector.onnx.data"
 )
 
-# ONNX model
+
+# ========================================
+# LOAD ONNX MODEL
+# ========================================
+
 session = ort.InferenceSession(
-    onnx_model,
+    model_path,
     providers=["CPUExecutionProvider"]
 )
 
@@ -37,7 +41,10 @@ output_name = session.get_outputs()[0].name
 print("ONNX model loaded successfully.")
 
 
-# Image preprocessing
+# ========================================
+# IMAGE PREPROCESSING
+# ========================================
+
 def preprocess_image(image):
 
     image = image.resize((224, 224))
@@ -63,149 +70,6 @@ def preprocess_image(image):
     return image.astype(np.float32)
 
 
-# Home page
-@app.route("/")
-def home():
-    return render_template("index.html")
-
-
-# Prediction
-@app.route("/predict", methods=["POST"])
-def predict():
-
-    if "image" not in request.files:
-        return jsonify({
-            "error": "No image uploaded"
-        }), 400
-
-    file = request.files["image"]
-
-    try:
-
-        image = Image.open(file).convert("RGB")
-
-        image = preprocess_image(image)
-
-        output = session.run(
-            [output_name],
-            {input_name: image}
-        )[0]
-
-        # Softmax
-        exp = np.exp(
-            output - np.max(output)
-        )
-
-        probabilities = (
-            exp /
-            exp.sum(axis=1, keepdims=True)
-        )
-
-        classes = ["FAKE", "REAL"]
-
-        predicted = np.argmax(probabilities)
-
-        prediction = classes[predicted]
-
-        confidence = float(
-            probabilities[0][predicted] * 100
-        )
-
-        return jsonify({
-            "prediction": prediction,
-            "confidence": round(
-                confidence, 2
-            )
-        })
-
-    except Exception as e:
-
-        return jsonify({
-            "error": str(e)
-        }), 500
-
-
-if __name__ == "__main__":
-
-    import os
-
-    port = int(
-        os.environ.get(
-            "PORT",
-            10000
-        )
-    )
-
-    app.run(
-        host="0.0.0.0",
-        port=port
-    )
-
-app = Flask(__name__)
-CORS(app)
-
-# Use CPU on Render
-device = torch.device("cpu")
-
-print("Using device:", device)
-
-
-# ========================================
-# DOWNLOAD MODEL FROM HUGGING FACE
-# ========================================
-
-model_path = hf_hub_download(
-    repo_id="Aayush-009/ai-image-detector-model",
-    filename="ai_detector.pth"
-)
-
-
-# ========================================
-# LOAD RESNET18
-# ========================================
-
-model = models.resnet18(weights=None)
-
-model.fc = nn.Linear(
-    model.fc.in_features,
-    2
-)
-
-
-model.load_state_dict(
-    torch.load(
-        model_path,
-        map_location=device,
-        weights_only=True
-    )
-)
-
-
-model = model.to(device)
-
-model.eval()
-
-print("Model loaded successfully.")
-
-
-# ========================================
-# IMAGE PREPROCESSING
-# ========================================
-
-transform = transforms.Compose([
-
-    transforms.Resize((224, 224)),
-
-    transforms.ToTensor(),
-
-    transforms.Normalize(
-        mean=[0.485, 0.456, 0.406],
-        std=[0.229, 0.224, 0.225]
-    )
-
-])
-
-
 # ========================================
 # HOME PAGE
 # ========================================
@@ -217,7 +81,7 @@ def home():
 
 
 # ========================================
-# PREDICTION API
+# PREDICTION
 # ========================================
 
 @app.route("/predict", methods=["POST"])
@@ -226,101 +90,96 @@ def predict():
     if "image" not in request.files:
 
         return jsonify({
-            "error": "No image uploaded"
+            "error": "No image uploaded."
         }), 400
-
 
     file = request.files["image"]
 
+    if file.filename == "":
+
+        return jsonify({
+            "error": "No image selected."
+        }), 400
 
     try:
 
         # Open image
-
         image = Image.open(file).convert("RGB")
 
-
         # Preprocess
+        image = preprocess_image(image)
 
-        image = transform(image)
+        # Run ONNX prediction
+        output = session.run(
+            [output_name],
+            {
+                input_name: image
+            }
+        )[0]
 
+        # Softmax
+        exp = np.exp(
+            output - np.max(output)
+        )
 
-        # Add batch dimension
-
-        image = image.unsqueeze(0)
-
-
-        # CPU
-
-        image = image.to(device)
-
-
-        # Prediction
-
-        with torch.inference_mode():
-
-            outputs = model(image)
-
-            probabilities = torch.softmax(
-                outputs,
-                dim=1
+        probabilities = (
+            exp /
+            exp.sum(
+                axis=1,
+                keepdims=True
             )
+        )
 
-
-            confidence, predicted = torch.max(
-                probabilities,
-                1
-            )
-
-
-        # Classes
-
+        # Class mapping
         classes = [
             "FAKE",
             "REAL"
         ]
 
-
-        prediction = classes[
-            predicted.item()
-        ]
-
-
-        confidence = (
-            confidence.item() * 100
+        predicted_index = np.argmax(
+            probabilities
         )
 
+        prediction = classes[
+            predicted_index
+        ]
+
+        confidence = float(
+            probabilities[0][predicted_index]
+            * 100
+        )
 
         return jsonify({
-
             "prediction": prediction,
-
             "confidence": round(
                 confidence,
                 2
             )
-
         })
-
 
     except Exception as e:
 
-        print("Prediction error:", e)
+        print("Prediction error:", str(e))
 
         return jsonify({
-
             "error": str(e)
-
         }), 500
 
 
 # ========================================
-# RUN APP
+# START SERVER
 # ========================================
 
 if __name__ == "__main__":
 
+    port = int(
+        os.environ.get(
+            "PORT",
+            10000
+        )
+    )
+
     app.run(
         host="0.0.0.0",
-        port=10000
+        port=port
     )
