@@ -86,12 +86,28 @@ function handleFile(file) {
     const allowedTypes = [
         "image/jpeg",
         "image/jpg",
-        "image/png"
+        "image/png",
+        "image/heic",
+        "image/heif"
     ];
 
-    if (!allowedTypes.includes(file.type)) {
+    const fileExtension =
+        file.name.toLowerCase().split(".").pop();
 
-        alert("Please select a JPG, JPEG, or PNG image.");
+    const allowedExtensions = [
+        "jpg",
+        "jpeg",
+        "png",
+        "heic",
+        "heif"
+    ];
+
+    if (
+        !allowedTypes.includes(file.type) &&
+        !allowedExtensions.includes(fileExtension)
+    ) {
+
+        alert("Please select a JPG, JPEG, PNG, HEIC, or HEIF image.");
 
         return;
     }
