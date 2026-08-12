@@ -1,9 +1,8 @@
 Flask
 flask-cors
+onnxruntime
 Pillow
 numpy
-scikit-learn
 huggingface_hub
-onnxruntime
 gunicorn
 pillow-heif
